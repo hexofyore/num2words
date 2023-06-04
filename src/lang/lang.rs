@@ -23,6 +23,7 @@ pub enum Lang {
     /// );
     /// ```
     English,
+    Nepali,
 }
 
 impl FromStr for Lang {
@@ -37,6 +38,7 @@ impl FromStr for Lang {
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         match input {
             "en" => Ok(Self::English),
+            "np" => Ok(Self::Nepali),
             _ => Err(()),
         }
     }
@@ -56,5 +58,6 @@ pub fn to_language(lang: Lang, preferences: Vec<String>) -> Box<dyn Language> {
 
             Box::new(lang::English::new(false, false))
         }
+        Lang::Nepali => Box::new(lang::Nepali::new()),
     }
 }
