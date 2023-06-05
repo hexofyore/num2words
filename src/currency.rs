@@ -82,6 +82,7 @@ pub enum Currency {
     MXN,
     MYR,
     NOK,
+    NPR,
     NZD,
     PEN,
     PESO,
@@ -148,6 +149,7 @@ impl Currency {
             Currency::MYR => "ringgit{}",
             Currency::NOK => "norwegian krone{}",
             Currency::NZD => "new zealand dollar{}",
+            Currency::NPR => "nepali rupaiya{}",
             Currency::PEN => {
                 if plural_form {
                     "soles"

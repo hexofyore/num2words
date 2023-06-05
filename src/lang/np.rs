@@ -105,7 +105,7 @@ const UNITS: [&'static str; 100] = [
     "अन्ठान्नब्बे",
     "उनन्सय",
 ];
-
+const _MAX_PAISA: i64 = 99;
 const NEPALI_ORDINALS: [&'static str; 103] = [
     "पहिलो",
     "दोस्रो",
@@ -219,7 +219,7 @@ impl Nepali {
         Self {}
     }
 
-    fn split_np(&self, mut num: BigFloat) -> Vec<u64> {
+    fn split_np(&self, num: BigFloat) -> Vec<u64> {
         let mut splits = Vec::new();
         let mut num = num.to_u128().unwrap();
 
@@ -260,7 +260,7 @@ impl Nepali {
         Ok(words.join(" "))
     }
 
-    fn float_to_cardinal(&self, mut num: BigFloat) -> Result<String, Num2Err> {
+    fn float_to_cardinal(&self, num: BigFloat) -> Result<String, Num2Err> {
         let integer_part = num.int();
         let mut words: Vec<String> = vec![];
 
@@ -269,7 +269,7 @@ impl Nepali {
             words.push(integral_word);
         }
 
-        let mut fractional_part = num.frac();
+        let fractional_part = num.frac();
         if !fractional_part.is_zero() {
             words.push(String::from("दशमलव"));
         }
@@ -317,28 +317,28 @@ impl Language for Nepali {
         }
         if i == 0 {
             let last_num = splits[0];
-            let mut cardinal_word = self.to_cardinal(num)?;
+            let cardinal_word = self.to_cardinal(num)?;
             let mut words = cardinal_word
                 .split_whitespace()
                 .collect::<Vec<_>>()
                 .to_owned();
             words.pop();
             words.push(NEPALI_ORDINALS[last_num as usize - 1]);
-            return Ok(words.join(" "));
+            Ok(words.join(" "))
         } else {
-            i = 100 - 2 + i;
-            let mut cardinal_word = self.to_cardinal(num)?;
+            i += 100 - 2;
+            let cardinal_word = self.to_cardinal(num)?;
             let mut words = cardinal_word
                 .split_whitespace()
                 .collect::<Vec<_>>()
                 .to_owned();
             words.pop();
             words.push(NEPALI_ORDINALS[i as usize]);
-            return Ok(words.join(" "));
+            Ok(words.join(" "))
         }
     }
 
-    fn to_ordinal_num(&self, num: BigFloat) -> Result<String, Num2Err> {
+    fn to_ordinal_num(&self, _num: BigFloat) -> Result<String, Num2Err> {
         Err(Num2Err::CannotConvert)
     }
 
@@ -346,15 +346,37 @@ impl Language for Nepali {
         if !num.frac().is_zero() {
             return Err(Num2Err::FloatingYear);
         }
-        let cardinal_word = 
+        let cardinal_word = self.int_to_cardinal(num)?;
+        let mut words = vec![cardinal_word];
+        words.push(String::from("साल"));
+        Ok(words.join(" "))
     }
 
-    fn to_currency(&self, num: BigFloat, currency: Currency) -> Result<String, Num2Err> {
-        let integer_part = num.int();
-        let fraction_part = num.frac();
-        if fraction_part.len
-        let integer_word = self.int_to_cardinal(integer_part);
-        let 
+    fn to_currency(&self, num: BigFloat, _currency: Currency) -> Result<String, Num2Err> {
+        if num.is_inf_pos() {
+            Ok(String::from("अनन्त"))
+        } else if num.is_inf_neg() {
+            Ok(String::from("-अनन्त"))
+        } else if num.frac().is_zero() {
+            let words = self.int_to_cardinal(num)?;
+            Ok(format!("{} {}", words, String::from("रुपैयाँ")))
+        } else {
+            let integral_part = num.int();
+            let paisa = (num * BigFloat::from(100)).int() % BigFloat::from(100);
+            let paisa_words = self.int_to_cardinal(paisa)?;
+            let paisa_suffix = String::from("पैसा");
+            let integral_word = self.to_currency(integral_part, Currency::NPR)?;
+            if paisa.is_zero() {
+                Ok(integral_word)
+            } else if integral_part.is_zero() {
+                Ok(format!("{} {}", paisa_words, paisa_suffix))
+            } else {
+                Ok(format!(
+                    "{} {} {}",
+                    integral_word, paisa_words, paisa_suffix
+                ))
+            }
+        }
     }
 }
 
